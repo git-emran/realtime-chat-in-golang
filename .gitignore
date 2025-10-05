@@ -1,0 +1,33 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build outputs
+*.test
+*.out
+
+# Dependency directories (not needed in git)
+vendor/
+
+
+# Mac / Linux system files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Coverage / test reports
+coverage.out
+
+# Build artifacts
+bin/
+dist/
+
+# Go workspace file
+go.work
+go.work.sum
+
