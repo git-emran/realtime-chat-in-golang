@@ -12,6 +12,8 @@
 # Dependency directories (not needed in git)
 vendor/
 
+.vscode
+
 
 # Mac / Linux system files
 .DS_Store
