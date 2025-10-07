@@ -2,6 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/google/uuid"
+	"net/http"
 
 	"github.com/gorilla/websocket"
 )
@@ -71,4 +74,66 @@ func (manager *ClientManager) send(message []byte, ignore *Client) {
 		}
 
 	}
+}
+
+func (c *Client) read() {
+
+	defer func() {
+		manager.unregister <- c
+		c.socket.Close()
+	}()
+
+	for {
+		_, message, err := c.socket.ReadMessage()
+		if err != nil {
+			manager.unregister <- c
+			c.socket.Close()
+			break
+		}
+
+		jsonMessage, _ := json.Marshal(&Message{Sender: c.id, Content: string(message)})
+		manager.broadcast <- jsonMessage
+	}
+
+}
+
+func (c *Client) write() {
+	defer func() {
+		c.socket.Close()
+
+	}()
+
+	for {
+		select {
+		case message, ok := <-c.send:
+			if !ok {
+				c.socket.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			c.socket.WriteMessage(websocket.TextMessage, message)
+
+		}
+	}
+}
+
+func main() {
+	fmt.Println("Starting application...")
+	go manager.start()
+	http.HandleFunc("/ws", wsPage)
+	http.ListenAndServe(":12345", nil)
+}
+
+func wsPage(res http.ResponseWriter, req *http.Request) {
+	conn, error := (&websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}).Upgrade(res, req, nil)
+	if error != nil {
+		http.NotFound(res, req)
+		return
+	}
+	client := &Client{id: uuid.New().String(), socket: conn, send: make(chan []byte)}
+
+	manager.register <- client
+
+	go client.read()
+	go client.write()
 }
